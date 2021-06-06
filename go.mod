@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/Take-A-Seat/auth v0.0.0-20210516081342-2f26fb1c378d
-	github.com/Take-A-Seat/storage v0.0.0-20210606135209-2983fa0240e1
+	github.com/Take-A-Seat/storage v0.0.0-20210606200627-03be3c30885a
 	github.com/aws/aws-sdk-go v1.38.55 // indirect
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.2

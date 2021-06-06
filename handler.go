@@ -18,7 +18,7 @@ func handlerGetBookingAvailable(c *gin.Context) {
 	restaurantId := c.Param("restaurantId")
 	date := c.Param("date")
 	persons := c.Param("persons")
-	err := getFreeHours(restaurantId, date, persons)
+	err := getFreeHours(c, restaurantId, date, persons)
 	if err == nil {
 		c.JSON(http.StatusOK, "OK")
 	} else {

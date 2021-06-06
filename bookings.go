@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"github.com/Take-A-Seat/storage"
 	"github.com/Take-A-Seat/storage/models"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strconv"
 	"time"
 )
 
-func getFreeHours(restaurantId string, date string, persons string) error {
+func getFreeHours(c *gin.Context,restaurantId string, date string, persons string) error {
 	restaurantIdObject, err := primitive.ObjectIDFromHex(restaurantId)
 	if err != nil {
 		return err
@@ -27,7 +28,21 @@ func getFreeHours(restaurantId string, date string, persons string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(timeT, restaurantIdObject, numberPersons, listReservation)
+
+	restaurant,err := getRestaurantById(c,restaurantId)
+	if err != nil {
+		return err
+	}
+
+	weekday := timeT.Weekday()
+	var programDay models.Program
+	for _,program := range restaurant.RestaurantDetails.Program{
+		if (program.Day)%7 == int(weekday){
+			programDay = program
+		}
+	}
+
+	fmt.Println(timeT, restaurantIdObject, numberPersons, listReservation,restaurant,programDay)
 
 	return nil
 }
@@ -67,7 +82,7 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time) ([]models.Rese
 	}
 
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
-	filter := bson.M{"createdAt": bson.M{
+	filter := bson.M{"reservationDate": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(date),
 		"$lte": primitive.NewDateTimeFromTime(date.Add(time.Hour * 24)),
 	}}
