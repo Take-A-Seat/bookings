@@ -2,52 +2,99 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Take-A-Seat/storage"
 	"github.com/Take-A-Seat/storage/models"
+	"github.com/araddon/dateparse"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"strconv"
 	"time"
 )
 
-func getFreeHours(c *gin.Context,restaurantId string, date string, persons string) error {
+func getFreeHours(c *gin.Context, restaurantId string, date string, persons string) ([]models.AvailableDataReservation, error) {
+	var availableData []models.AvailableDataReservation
+	var programDay models.Program
+
 	restaurantIdObject, err := primitive.ObjectIDFromHex(restaurantId)
 	if err != nil {
-		return err
-	}
-	numberPersons, err := strconv.Atoi(persons)
-	if err != nil {
-		return err
+		return availableData, err
 	}
 
-	timeT, _ := time.Parse("2006-01-02", date)
-
-	listReservation, err := getBookings(restaurantIdObject, timeT)
+	timeT, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		return err
+		return availableData, err
 	}
 
-	restaurant,err := getRestaurantById(c,restaurantId)
+	restaurant, err := getRestaurantById(c, restaurantId)
 	if err != nil {
-		return err
+		return availableData, err
 	}
 
 	weekday := timeT.Weekday()
-	var programDay models.Program
-	for _,program := range restaurant.RestaurantDetails.Program{
-		if (program.Day)%7 == int(weekday){
+	for _, program := range restaurant.RestaurantDetails.Program {
+		if (program.Day)%7 == int(weekday) {
 			programDay = program
 		}
 	}
 
-	fmt.Println(timeT, restaurantIdObject, numberPersons, listReservation,restaurant,programDay)
+	if programDay.Close == true {
+		return availableData, errors.New("Closed")
 
-	return nil
+	}
+
+	numberPersons, err := strconv.Atoi(persons)
+	if err != nil {
+		return availableData, err
+	}
+
+	listReservation, err := getBookings(restaurantIdObject, timeT)
+	if err != nil {
+		return availableData, err
+	}
+
+	//layout := "2006-01-02 3:4:5 PM"
+
+	//startProgram, err := time.Parse(layout, date+" "+programDay.StartAt)
+	startProgram, err := dateparse.ParseAny(date + " " + programDay.StartAt)
+	if err != nil {
+		return availableData, err
+	}
+
+	endProgram, err := dateparse.ParseAny(date + " " + programDay.EndAt)
+	if err != nil {
+		return availableData, err
+	}
+
+	currentTimeToAdd := startProgram
+	var freeDate models.AvailableDataReservation
+
+	for currentTimeToAdd.After(endProgram) == false {
+		freeDate.DateTime = currentTimeToAdd
+		hour, minutes, _ := currentTimeToAdd.Clock()
+		stringHour := strconv.Itoa(hour)
+		stringMinutes := strconv.Itoa(minutes)
+		if stringMinutes != "0" {
+			freeDate.TimeString = stringHour + ":" + stringMinutes
+		} else {
+			freeDate.TimeString = stringHour + ":" + stringMinutes + "0"
+
+		}
+		availableData = append(availableData, freeDate)
+		currentTimeToAdd = currentTimeToAdd.Add(time.Minute * 15)
+	}
+
+	fmt.Println(timeT, restaurantIdObject, numberPersons, listReservation, restaurant, programDay, startProgram, endProgram)
+
+	return availableData, err
 }
 
-func createBooking(booking models.Reservation) error {
+
+
+func createBooking(booking models.Reservation,restaurant models.RestaurantWithDetails) error {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
@@ -68,7 +115,11 @@ func createBooking(booking models.Reservation) error {
 		"details":         booking.Details,
 		"status":          "Pending",
 	})
+	if err!=nil{
+		return err
+	}
 
+	sendConfirmationCreateReservation(booking.Email,booking.FirstName,restaurant.RestaurantDetails.Name)
 	return nil
 }
 
@@ -89,7 +140,10 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time) ([]models.Rese
 
 	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if countReservation > 0 {
-		cursor, err := bookingsCollection.Find(context.Background(), filter)
+		findOptions := options.Find()
+		findOptions.SetSort(bson.D{{"reservationDate", 1}})
+
+		cursor, err := bookingsCollection.Find(context.Background(), filter, findOptions)
 		if err != nil {
 			return listBookings, err
 		}

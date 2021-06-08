@@ -3,13 +3,12 @@ package main
 import (
 	"github.com/Take-A-Seat/storage/models"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
 
 func handlerSendEmail(c *gin.Context) {
 
-	sendInviteEmail(primitive.ObjectID{}, "calinciuc.andrei@yahoo.com", "A66554")
+	//sendInviteEmail(primitive.ObjectID{}, "calinciucandrei98@gmail.com", "A66554")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Send!"})
 }
@@ -18,11 +17,17 @@ func handlerGetBookingAvailable(c *gin.Context) {
 	restaurantId := c.Param("restaurantId")
 	date := c.Param("date")
 	persons := c.Param("persons")
-	err := getFreeHours(c, restaurantId, date, persons)
+	listAvailableHours,err := getFreeHours(c, restaurantId, date, persons)
+
 	if err == nil {
-		c.JSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, listAvailableHours)
 	} else {
-		c.JSON(http.StatusNoContent, gin.H{"error": err.Error()})
+		if err.Error()=="Closed"{
+			c.JSON(http.StatusNoContent, gin.H{"error": err.Error()})
+		}else{
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		}
 	}
 }
 
@@ -34,8 +39,14 @@ func handlerCreateBooking(c *gin.Context){
 		c.JSON(http.StatusBadRequest, gin.H{"message": errBindJson.Error()})
 		return
 	}
-	errInsert := createBooking(booking)
 
+	restaurant,err := getRestaurantById(c,booking.RestaurantId.Hex())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err})
+		return
+	}
+
+	errInsert := createBooking(booking,restaurant)
 	if errInsert != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errInsert})
 		return

@@ -39,6 +39,7 @@ func main() {
 	{
 
 		freeRoute.POST("/restaurant/:restaurantId/booking", handlerCreateBooking)
+		freeRoute.POST("/restaurant/:restaurantId/email", handlerSendEmail)
 		freeRoute.GET("/restaurant/:restaurantId/booking-hours/date/:date/persons/:persons", handlerGetBookingAvailable)
 
 	}

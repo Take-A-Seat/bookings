@@ -1,21 +1,16 @@
 package main
 
-import (
-	"github.com/Take-A-Seat/storage"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
-func sendInviteEmail(inviteId primitive.ObjectID, userEmail string, codeId string)  {
-	var toInfo storage.ToInfo
+func sendConfirmationCreateReservation(userEmail string, firstName string, restaurantName string) {
+	var toInfo ToInfo
 
 	toInfo.Email = userEmail
 
 	var subject string
 	var textContent string
 	var htmlContent string
-	subject = "Confirmation reservation"
+	subject = restaurantName+" The reservation is pending"
 	textContent = "Take a seat"
-	htmlContent = "<p>Your code is:" + codeId
+	htmlContent = "<p> <strong>" + firstName + "</strong><p> <br> <p>" + "We will get back to you soon with an email confirming your reservation at <strong>" + restaurantName + "</strong> </p>"
 
-	storage.SendEmail(subject, toInfo, textContent, htmlContent)
+	SendEmail(subject, toInfo, textContent, htmlContent)
 }
