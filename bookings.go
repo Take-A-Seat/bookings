@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"math/rand"
 	"strconv"
 	"time"
 )
@@ -51,14 +52,11 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 		return availableData, err
 	}
 
-	listReservation, err := getBookings(restaurantIdObject, timeT)
+	listReservation, err := getBookings(restaurantIdObject, timeT, "Accepted")
 	if err != nil {
 		return availableData, err
 	}
 
-	//layout := "2006-01-02 3:4:5 PM"
-
-	//startProgram, err := time.Parse(layout, date+" "+programDay.StartAt)
 	startProgram, err := dateparse.ParseAny(date + " " + programDay.StartAt)
 	if err != nil {
 		return availableData, err
@@ -69,9 +67,19 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 		return availableData, err
 	}
 
-	currentTimeToAdd := startProgram
-	var freeDate models.AvailableDataReservation
+	if time.Now().After(endProgram) == true {
+		return availableData, errors.New("Closed")
+	}
 
+	var currentTimeToAdd time.Time
+	if time.Now().Before(startProgram) == true {
+		currentTimeToAdd = startProgram
+	} else {
+		now := time.Now()
+		currentTimeToAdd = time.Date(now.Year(), time.Month(int(now.Month())), now.Day(), now.Hour()+3, 0, 0, 0, startProgram.Location())
+	}
+
+	var freeDate models.AvailableDataReservation
 	for currentTimeToAdd.After(endProgram) == false {
 		freeDate.DateTime = currentTimeToAdd
 		hour, minutes, _ := currentTimeToAdd.Clock()
@@ -81,7 +89,6 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 			freeDate.TimeString = stringHour + ":" + stringMinutes
 		} else {
 			freeDate.TimeString = stringHour + ":" + stringMinutes + "0"
-
 		}
 		availableData = append(availableData, freeDate)
 		currentTimeToAdd = currentTimeToAdd.Add(time.Minute * 15)
@@ -92,9 +99,82 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 	return availableData, err
 }
 
+func getReservationByDateAndStatusAndRestaurantId(date time.Time, listReservation []models.Reservation) error {
+
+	return nil
+}
+
+func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterReq string) ([]models.Reservation, error) {
+	var listBookings []models.Reservation
+
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return listBookings, err
+	}
+
+	timeT, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return listBookings, err
+	}
+
+	restaurantIdObj, err := primitive.ObjectIDFromHex(restaurantId)
+	if err != nil {
+		return listBookings, err
+	}
+
+	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
+	var filter bson.M
+	if filterReq=="All"{
+		filter = bson.M{"reservationDate": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(timeT),
+			"$lte": primitive.NewDateTimeFromTime(timeT.Add(time.Hour * 24)),
+		}, "restaurantId": restaurantIdObj}
+	}else{
+		filter = bson.M{"reservationDate": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(timeT),
+			"$lte": primitive.NewDateTimeFromTime(timeT.Add(time.Hour * 24)),
+		}, "restaurantId": restaurantIdObj, "status": filterReq}
+	}
 
 
-func createBooking(booking models.Reservation,restaurant models.RestaurantWithDetails) error {
+	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
+	if countReservation > 0 {
+		findOptions := options.Find()
+		findOptions.SetSort(bson.D{{"reservationDate", -1}, {"status", 1}})
+
+		cursor, err := bookingsCollection.Find(context.Background(), filter, findOptions)
+		if err != nil {
+			return listBookings, err
+		}
+
+		for cursor.Next(context.TODO()) {
+			var booking models.Reservation
+			err = cursor.Decode(&booking)
+			if err != nil {
+				return listBookings, err
+			}
+
+			listBookings = append(listBookings, booking)
+		}
+	} else {
+		return listBookings, nil
+	}
+
+	return listBookings, nil
+
+}
+
+func findDateInListReservation(date time.Time, list []models.Reservation) bool {
+	for _, book := range list {
+		if date.Equal(book.ReservationDate) == true {
+			return true
+		}
+	}
+	return false
+}
+
+func createBooking(booking models.Reservation, restaurant models.RestaurantWithDetails) error {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
@@ -115,15 +195,17 @@ func createBooking(booking models.Reservation,restaurant models.RestaurantWithDe
 		"details":         booking.Details,
 		"status":          "Pending",
 	})
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 
-	sendConfirmationCreateReservation(booking.Email,booking.FirstName,restaurant.RestaurantDetails.Name)
+	hourString := strconv.Itoa(booking.ReservationDate.Hour()) + ":" + strconv.Itoa(booking.ReservationDate.Minute())
+	date := strconv.Itoa(booking.ReservationDate.Year()) + "-" + strconv.Itoa(int(time.Month(int(booking.ReservationDate.Month())))) + "-" + strconv.Itoa(booking.ReservationDate.Day())
+	sendConfirmationCreateReservation(booking.Email, booking.FirstName, restaurant.RestaurantDetails.Name, hourString, date)
 	return nil
 }
 
-func getBookings(restaurantId primitive.ObjectID, date time.Time) ([]models.Reservation, error) {
+func getBookings(restaurantId primitive.ObjectID, date time.Time, status string) ([]models.Reservation, error) {
 	var listBookings []models.Reservation
 
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
@@ -136,7 +218,7 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time) ([]models.Rese
 	filter := bson.M{"reservationDate": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(date),
 		"$lte": primitive.NewDateTimeFromTime(date.Add(time.Hour * 24)),
-	}}
+	}, "status": status, "restaurantId": restaurantId}
 
 	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if countReservation > 0 {
@@ -162,4 +244,90 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time) ([]models.Rese
 	}
 
 	return listBookings, nil
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func confirmBooking(booking models.ReservationCode, c *gin.Context) error {
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return err
+	}
+
+	booking.Code = RandStringBytes(6)
+	booking.Id = primitive.NewObjectID()
+	bookingCodeCollection := client.Database(mongoDatabase).Collection("bookingCode")
+	_, err = bookingCodeCollection.InsertOne(context.Background(), bson.M{
+		"_id":           booking.Id,
+		"restaurantId":  booking.RestaurantId,
+		"reservationId": booking.ReservationId,
+		"tableId":       booking.TableId,
+		"message":       booking.Message,
+		"code":          booking.Code,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = updateStatusBooking(booking.ReservationId, "Accepted")
+	bookingDb, err := getBookingById(booking.ReservationId)
+	if err != nil {
+		return err
+	}
+
+	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
+	if err != nil {
+		return err
+	}
+
+	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.Message, restaurant.RestaurantDetails.Name, booking.Code)
+	return nil
+}
+
+func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
+	var booking models.Reservation
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return booking, err
+	}
+
+	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
+	filter := bson.M{"_id": bookingId}
+	err = bookingsCollection.FindOne(context.Background(), filter).Decode(&booking)
+	if err != nil {
+		return booking, err
+
+	}
+	return booking, nil
+}
+
+func updateStatusBooking(bookingId primitive.ObjectID, status string) error {
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return err
+	}
+
+	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
+	filter := bson.M{"_id": bookingId}
+
+	updateObject := bson.D{{"$set", bson.D{
+		{"status", status},
+	}}}
+	_, err = bookingsCollection.UpdateOne(context.Background(), filter, updateObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

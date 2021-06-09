@@ -3,9 +3,10 @@ module github.com/Take-A-Seat/bookings
 go 1.14
 
 require (
-	github.com/Take-A-Seat/storage v0.0.0-20210607061354-786c3a9341c9
+	github.com/Take-A-Seat/auth v0.0.0-20210516081342-2f26fb1c378d
+	github.com/Take-A-Seat/storage v0.0.0-20210608183005-2b7d7cb9b8a7
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/aws/aws-sdk-go v1.38.55 // indirect
+	github.com/aws/aws-sdk-go v1.38.57 // indirect
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
@@ -26,6 +27,6 @@ require (
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20210603125802-9665404d3644 // indirect
+	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

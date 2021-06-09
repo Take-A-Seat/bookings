@@ -22,16 +22,46 @@ func handlerGetBookingAvailable(c *gin.Context) {
 	if err == nil {
 		c.JSON(http.StatusOK, listAvailableHours)
 	} else {
-		if err.Error()=="Closed"{
+		if err.Error() == "Closed" {
 			c.JSON(http.StatusNoContent, gin.H{"error": err.Error()})
-		}else{
+		} else {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 
 		}
 	}
 }
 
-func handlerCreateBooking(c *gin.Context){
+func handlerGetBookingByRestaurantAndDate(c *gin.Context) {
+	restaurantId := c.Param("restaurantId")
+	date := c.Param("date")
+	filter := c.Param("filter")
+	listBookings, err := getAllBookingsByRestaurantAndDate(restaurantId, date,filter)
+
+	if err == nil {
+		c.JSON(http.StatusOK, listBookings)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+
+func handleAcceptReservation(c *gin.Context) {
+	var bookingCode models.ReservationCode
+
+	err := c.ShouldBindJSON(&bookingCode)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err = confirmBooking(bookingCode, c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else {
+		c.JSON(http.StatusCreated, gin.H{"error": "Accept reservation success"})
+	}
+}
+
+func handlerCreateBooking(c *gin.Context) {
 	var booking models.Reservation
 
 	errBindJson := c.ShouldBindJSON(&booking)
