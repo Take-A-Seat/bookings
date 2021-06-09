@@ -20,6 +20,8 @@ github.com/Take-A-Seat/storage v0.0.0-20210607061354-786c3a9341c9 h1:6bSO1bkc64s
 github.com/Take-A-Seat/storage v0.0.0-20210607061354-786c3a9341c9/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/Take-A-Seat/storage v0.0.0-20210608183005-2b7d7cb9b8a7 h1:HmgCqYikBnbTUNO+rSmWZfuQIWkR2XMQRf+PTRHJ5IQ=
 github.com/Take-A-Seat/storage v0.0.0-20210608183005-2b7d7cb9b8a7/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
+github.com/Take-A-Seat/storage v0.0.0-20210609152013-12313cea6992 h1:ZL3+uD6xdBCUMXdPL1/RULqePnEVMBPCuHT85CJVc3A=
+github.com/Take-A-Seat/storage v0.0.0-20210609152013-12313cea6992/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/appleboy/gin-jwt/v2 v2.6.4/go.mod h1:CZpq1cRw+kqi0+yD2CwVw7VGXrrx4AqBdeZnwxVmoAs=
 github.com/appleboy/gofight/v2 v2.1.2/go.mod h1:frW+U1QZEdDgixycTj4CygQ48yLTUhplt43+Wczp3rw=
 github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de h1:FxWPpzIjnTlhPwqqXc4/vE0f7GvRjuAsbW+HOIe8KnA=

@@ -126,12 +126,12 @@ func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterR
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
 	var filter bson.M
 	if filterReq=="All"{
-		filter = bson.M{"reservationDate": bson.M{
+		filter = bson.M{"startReservationDate": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(timeT),
 			"$lte": primitive.NewDateTimeFromTime(timeT.Add(time.Hour * 24)),
 		}, "restaurantId": restaurantIdObj}
 	}else{
-		filter = bson.M{"reservationDate": bson.M{
+		filter = bson.M{"startReservationDate": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(timeT),
 			"$lte": primitive.NewDateTimeFromTime(timeT.Add(time.Hour * 24)),
 		}, "restaurantId": restaurantIdObj, "status": filterReq}
@@ -141,7 +141,7 @@ func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterR
 	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if countReservation > 0 {
 		findOptions := options.Find()
-		findOptions.SetSort(bson.D{{"reservationDate", -1}, {"status", 1}})
+		findOptions.SetSort(bson.D{{"startReservationDate", -1}, {"status", 1}})
 
 		cursor, err := bookingsCollection.Find(context.Background(), filter, findOptions)
 		if err != nil {
@@ -166,11 +166,11 @@ func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterR
 }
 
 func findDateInListReservation(date time.Time, list []models.Reservation) bool {
-	for _, book := range list {
-		if date.Equal(book.ReservationDate) == true {
-			return true
-		}
-	}
+	//for _, book := range list {
+	//	if date.Equal(book.ReservationDate) == true {
+	//		return true
+	//	}
+	//}
 	return false
 }
 
@@ -184,24 +184,33 @@ func createBooking(booking models.Reservation, restaurant models.RestaurantWithD
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
 	booking.Id = primitive.NewObjectID()
 	_, err = bookingsCollection.InsertOne(context.Background(), bson.M{
-		"_id":             booking.Id,
-		"persons":         booking.Persons,
-		"reservationDate": booking.ReservationDate,
-		"restaurantId":    booking.RestaurantId,
-		"phone":           booking.Phone,
-		"firstName":       booking.FirstName,
-		"lastName":        booking.LastName,
-		"email":           booking.Email,
-		"details":         booking.Details,
-		"status":          "Pending",
+		"_id":                  booking.Id,
+		"persons":              booking.Persons,
+		"startReservationDate": booking.StartReservationDate,
+		"endReservationDate":   booking.EndReservationDate,
+		"restaurantId":         booking.RestaurantId,
+		"phone":                booking.Phone,
+		"firstName":            booking.FirstName,
+		"lastName":             booking.LastName,
+		"email":                booking.Email,
+		"details":              booking.Details,
+		"status":               "Pending",
 	})
 	if err != nil {
 		return err
 	}
 
-	hourString := strconv.Itoa(booking.ReservationDate.Hour()) + ":" + strconv.Itoa(booking.ReservationDate.Minute())
-	date := strconv.Itoa(booking.ReservationDate.Year()) + "-" + strconv.Itoa(int(time.Month(int(booking.ReservationDate.Month())))) + "-" + strconv.Itoa(booking.ReservationDate.Day())
-	sendConfirmationCreateReservation(booking.Email, booking.FirstName, restaurant.RestaurantDetails.Name, hourString, date)
+	startHourString := strconv.Itoa(booking.StartReservationDate.Hour()) + ":" + strconv.Itoa(booking.StartReservationDate.Minute())
+	if strconv.Itoa(booking.StartReservationDate.Minute())=="0"{
+		startHourString+="0"
+	}
+	startDate := strconv.Itoa(booking.StartReservationDate.Year()) + "-" + strconv.Itoa(int(time.Month(int(booking.StartReservationDate.Month())))) + "-" + strconv.Itoa(booking.StartReservationDate.Day())
+
+	endHourString := strconv.Itoa(booking.EndReservationDate.Hour()) + ":" + strconv.Itoa(booking.EndReservationDate.Minute())
+	if strconv.Itoa(booking.EndReservationDate.Minute()) =="0"{
+		endHourString+="0"
+	}
+	sendConfirmationCreateReservation(booking.Email, booking.FirstName, restaurant.RestaurantDetails.Name, startHourString, startDate,endHourString,)
 	return nil
 }
 
@@ -215,7 +224,7 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time, status string)
 	}
 
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
-	filter := bson.M{"reservationDate": bson.M{
+	filter := bson.M{"startReservationDate": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(date),
 		"$lte": primitive.NewDateTimeFromTime(date.Add(time.Hour * 24)),
 	}, "status": status, "restaurantId": restaurantId}
@@ -223,7 +232,7 @@ func getBookings(restaurantId primitive.ObjectID, date time.Time, status string)
 	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if countReservation > 0 {
 		findOptions := options.Find()
-		findOptions.SetSort(bson.D{{"reservationDate", 1}})
+		findOptions.SetSort(bson.D{{"startReservationDate", 1}})
 
 		cursor, err := bookingsCollection.Find(context.Background(), filter, findOptions)
 		if err != nil {

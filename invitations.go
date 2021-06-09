@@ -1,6 +1,6 @@
 package main
 
-func sendConfirmationCreateReservation(userEmail string, firstName string, restaurantName string, hour string, date string) {
+func sendConfirmationCreateReservation(userEmail string, firstName string, restaurantName string, startHour string, startDate string, endHour string) {
 	var toInfo ToInfo
 
 	toInfo.Email = userEmail
@@ -10,7 +10,7 @@ func sendConfirmationCreateReservation(userEmail string, firstName string, resta
 	var htmlContent string
 	subject = restaurantName + " The reservation is pending"
 	textContent = "Take a seat"
-	htmlContent = "<p> <strong>" + firstName + "</strong><p> <br> <p>" + "We will get back to you soon with an email confirming your reservation at <strong>" + restaurantName + "</strong>  at  <strong>" + date + " " + hour + "</strong> </p>"
+	htmlContent = "<p> <strong>" + firstName + "</strong><p> <br> <p>" + "We will get back to you soon with an email confirming your reservation at <strong>" + restaurantName + "</strong>  at  <strong>" + startDate + " " + startHour + "</strong> until at " + "</strong>  at <strong>" + endHour + "</p>"
 
 	SendEmail(subject, toInfo, textContent, htmlContent)
 }
