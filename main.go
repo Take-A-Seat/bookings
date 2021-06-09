@@ -51,7 +51,7 @@ func main() {
 	{
 		protectedUsers.POST("/id/:bookingId/confirm", handleAcceptReservation)
 		protectedUsers.GET("/restaurant/:restaurantId/date/:date/:filter", handlerGetBookingByRestaurantAndDate)
-		//protectedUsers.POST("/restaurant/:restaurantId/booking/:bookingId/decline", handleAcceptReservation)
+		protectedUsers.GET("/restaurant/:restaurantId/availableTables//:startRes/:endRes", handleGetAvailableTables)
 	}
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Port already in use!")

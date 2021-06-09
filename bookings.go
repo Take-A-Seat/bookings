@@ -265,7 +265,7 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
-func confirmBooking(booking models.ReservationCode, c *gin.Context) error {
+func confirmBooking(booking models.Reservation, c *gin.Context, bookingId string) error {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
@@ -273,22 +273,26 @@ func confirmBooking(booking models.ReservationCode, c *gin.Context) error {
 	}
 
 	booking.Code = RandStringBytes(6)
-	booking.Id = primitive.NewObjectID()
-	bookingCodeCollection := client.Database(mongoDatabase).Collection("bookingCode")
-	_, err = bookingCodeCollection.InsertOne(context.Background(), bson.M{
-		"_id":           booking.Id,
-		"restaurantId":  booking.RestaurantId,
-		"reservationId": booking.ReservationId,
-		"tableId":       booking.TableId,
-		"message":       booking.Message,
-		"code":          booking.Code,
-	})
+	bookingCollection := client.Database(mongoDatabase).Collection("bookings")
+	bookingIdObj, err := primitive.ObjectIDFromHex(bookingId)
 	if err != nil {
 		return err
 	}
 
-	err = updateStatusBooking(booking.ReservationId, "Accepted")
-	bookingDb, err := getBookingById(booking.ReservationId)
+	filter := bson.M{"_id": bookingIdObj}
+
+	updateObject := bson.D{{"$set", bson.D{
+		{"status", "Accepted"},
+		{"tableId", booking.TableId},
+		{"messageToClient", booking.MessageToClient},
+		{"code", booking.Code},
+	}}}
+	_, err = bookingCollection.UpdateOne(context.Background(), filter, updateObject)
+	if err != nil {
+		return err
+	}
+
+	bookingDb, err := getBookingById(bookingIdObj)
 	if err != nil {
 		return err
 	}
@@ -298,7 +302,7 @@ func confirmBooking(booking models.ReservationCode, c *gin.Context) error {
 		return err
 	}
 
-	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.Message, restaurant.RestaurantDetails.Name, booking.Code)
+	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name, booking.Code)
 	return nil
 }
 
@@ -320,23 +324,63 @@ func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
 	return booking, nil
 }
 
-func updateStatusBooking(bookingId primitive.ObjectID, status string) error {
+func availableTables(restaurantId string, startReservation string, endReservation string) error {
+	starT, err := time.Parse("2006-01-02T15:04", startReservation)
+	if err != nil {
+		return err
+	}
+	endT, err := time.Parse("2006-01-02T15:04", endReservation)
+	if err != nil {
+		return err
+	}
+
+	tableId, err := primitive.ObjectIDFromHex("60bfb0e1cc5c5c17a782aa1c")
+	if err != nil {
+		return err
+	}
+
+	check, err := checkTableAvailableInInterval(tableId, starT, endT)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(check)
+
+	return nil
+}
+
+func checkTableAvailableInInterval(tableId primitive.ObjectID, start time.Time, end time.Time) (bool, error) {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
-	filter := bson.M{"_id": bookingId}
+	//filterObject := bson.M{
+	//	"$or": bson.A{bson.M{"associationId": associationObjectId}, bson.M{"associationId": primitive.NilObjectID}},
+	//}
+	filter := bson.M{
+		"$or": bson.A{
+			bson.M{"startReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(start), "$lt": primitive.NewDateTimeFromTime(end)},
+				"endReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(end), "$lt": primitive.NewDateTimeFromTime(start)},
+			},
+			bson.M{"startReservationDate": bson.M{"$lte": primitive.NewDateTimeFromTime(start), "$lt": primitive.NewDateTimeFromTime(end)},
+				"endReservationDate": bson.M{"$gt": primitive.NewDateTimeFromTime(end), "$gte": primitive.NewDateTimeFromTime(start)},
+			},
+			bson.M{"startReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(start), "$lte": primitive.NewDateTimeFromTime(end)},
+				"endReservationDate": bson.M{"$lt": primitive.NewDateTimeFromTime(end), "$lte": primitive.NewDateTimeFromTime(start)},
+			},
+		}, "status": "Accepted", "tableId": tableId}
 
-	updateObject := bson.D{{"$set", bson.D{
-		{"status", status},
-	}}}
-	_, err = bookingsCollection.UpdateOne(context.Background(), filter, updateObject)
+	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	if countReservation > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }

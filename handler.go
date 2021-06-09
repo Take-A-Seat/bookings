@@ -45,14 +45,27 @@ func handlerGetBookingByRestaurantAndDate(c *gin.Context) {
 }
 
 func handleAcceptReservation(c *gin.Context) {
-	var bookingCode models.ReservationCode
+	var bookingCode models.Reservation
 
 	err := c.ShouldBindJSON(&bookingCode)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = confirmBooking(bookingCode, c)
+	bookingId := c.Param("bookingId")
+	err = confirmBooking(bookingCode, c, bookingId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else {
+		c.JSON(http.StatusCreated, gin.H{"error": "Accept reservation success"})
+	}
+}
+func handleGetAvailableTables(c *gin.Context) {
+	restaurantId := c.Param("restaurantId")
+	startRes := c.Param("startRes")
+	endRes := c.Param("endRes")
+	err := availableTables(restaurantId, startRes, endRes)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

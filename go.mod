@@ -4,9 +4,9 @@ go 1.14
 
 require (
 	github.com/Take-A-Seat/auth v0.0.0-20210516081342-2f26fb1c378d
-	github.com/Take-A-Seat/storage v0.0.0-20210609152013-12313cea6992
+	github.com/Take-A-Seat/storage v0.0.0-20210609191750-ca69b62542b8
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/aws/aws-sdk-go v1.38.57 // indirect
+	github.com/aws/aws-sdk-go v1.38.58 // indirect
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
