@@ -40,7 +40,7 @@ func main() {
 	{
 		freeRoute.POST("/restaurant/:restaurantId/booking", handlerCreateBooking)
 		freeRoute.POST("/restaurant/:restaurantId/booking/:bookingId/confirm", handlerCreateBooking)
-		freeRoute.POST("/id/:bookingId/status", handleUpdateStatusReservation)
+		freeRoute.PUT("/id/:bookingId/status", handleUpdateStatusReservation)
 		freeRoute.GET("/id/:id/code/:code", handlerGetBookingByIdUser)
 		freeRoute.GET("/restaurant/:restaurantId/booking-hours/date/:date/persons/:persons", handlerGetBookingAvailable)
 		freeRoute.GET("/restaurant/:restaurantId/dataInterval/date/:date", handlerGetDataIntervals)

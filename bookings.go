@@ -336,11 +336,11 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 			{"status", booking.Status},
 			{"code", booking.Code},
 		}}}
-	} else if booking.Status == "Finish" {
+	} else if booking.Status == "Finished" {
 		updateObject = bson.D{{"$set", bson.D{
 			{"status", booking.Status},
 		}}}
-	} else if booking.Status == "Decline" {
+	} else if booking.Status == "Declined" {
 		booking.Code = RandStringBytes(12)
 		updateObject = bson.D{{"$set", bson.D{
 			{"status", booking.Status},
@@ -361,25 +361,25 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 		return err
 	}
 
-	bookingDb, err := getBookingById(bookingIdObj)
-	if err != nil {
-		return err
-	}
-
-	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
-	if err != nil {
-		return err
-	}
-
-	if booking.Status == "Wait Client" {
-		sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
-	} else if booking.Status == "Finish" {
-		sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
-	} else if booking.Status == "Active" {
-		sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code)
-	} else if booking.Status == "Decline" {
-
-	}
+	//bookingDb, err := getBookingById(bookingIdObj)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////if booking.Status == "Wait Client" {
+	//	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
+	//} else if booking.Status == "Finished" {
+	//	sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
+	//} else if booking.Status == "Active" {
+	//	sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code)
+	//} else if booking.Status == "Declined" {
+	//	sendDeclineReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.MessageToClient)
+	//}
 	return nil
 }
 
@@ -403,11 +403,11 @@ func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
 
 func availableTables(restaurantId string, startReservation string, endReservation string, c *gin.Context) ([]models.Area, error) {
 	var listAreas []models.Area
-	starT, err := time.Parse("2006-01-02T15:04:05.000Z07:00", startReservation)
+	starT, err := time.Parse("2006-01-02T15:04:05Z", startReservation)
 	if err != nil {
 		return listAreas, err
 	}
-	endT, err := time.Parse("2006-01-02T15:04:05.000Z07:00", endReservation)
+	endT, err := time.Parse("2006-01-02T15:04:05Z", endReservation)
 	if err != nil {
 		return listAreas, err
 	}
