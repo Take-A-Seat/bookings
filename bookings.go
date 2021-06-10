@@ -98,10 +98,59 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 
 	return availableData, err
 }
+func getAllIntervalDayBasedDay(c *gin.Context, restaurantId string, date string) ([]models.AvailableDataReservation, error) {
+	var dataProgramList []models.AvailableDataReservation
+	var programDay models.Program
 
-func getReservationByDateAndStatusAndRestaurantId(date time.Time, listReservation []models.Reservation) error {
+	timeT, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return dataProgramList, err
+	}
 
-	return nil
+	restaurant, err := getRestaurantById(c, restaurantId)
+	if err != nil {
+		return dataProgramList, err
+	}
+
+	weekday := timeT.Weekday()
+	for _, program := range restaurant.RestaurantDetails.Program {
+		if (program.Day)%7 == int(weekday) {
+			programDay = program
+		}
+	}
+
+	if programDay.Close == true {
+		return dataProgramList, errors.New("Closed")
+	}
+
+	startProgram, err := dateparse.ParseAny(date + " " + programDay.StartAt)
+	if err != nil {
+		return dataProgramList, err
+	}
+
+	endProgram, err := dateparse.ParseAny(date + " " + programDay.EndAt)
+	if err != nil {
+		return dataProgramList, err
+	}
+
+	currentTimeToAdd := startProgram
+	var freeDate models.AvailableDataReservation
+	for currentTimeToAdd.After(endProgram) == false {
+		freeDate.DateTime = currentTimeToAdd
+		hour, minutes, _ := currentTimeToAdd.Clock()
+		stringHour := strconv.Itoa(hour)
+		stringMinutes := strconv.Itoa(minutes)
+		if stringMinutes != "0" {
+			freeDate.TimeString = stringHour + ":" + stringMinutes
+		} else {
+			freeDate.TimeString = stringHour + ":" + stringMinutes + "0"
+		}
+
+		dataProgramList = append(dataProgramList, freeDate)
+		currentTimeToAdd = currentTimeToAdd.Add(time.Minute * 15)
+	}
+
+	return dataProgramList, err
 }
 
 func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterReq string) ([]models.Reservation, error) {
@@ -265,14 +314,40 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
-func confirmBooking(booking models.Reservation, c *gin.Context, bookingId string) error {
+func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId string) error {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
 		return err
 	}
 
-	booking.Code = RandStringBytes(6)
+	var updateObject bson.D
+	if booking.Status == "Wait Client" {
+		booking.Code = RandStringBytes(12)
+		updateObject = bson.D{{"$set", bson.D{
+			{"status", booking.Status},
+			{"tableId", booking.TableId},
+			{"messageToClient", booking.MessageToClient},
+			{"code", booking.Code},
+		}}}
+	} else if booking.Status == "Active" {
+		booking.Code = RandStringBytes(6)
+		updateObject = bson.D{{"$set", bson.D{
+			{"status", booking.Status},
+			{"code", booking.Code},
+		}}}
+	} else if booking.Status == "Finish" {
+		updateObject = bson.D{{"$set", bson.D{
+			{"status", booking.Status},
+		}}}
+	} else if booking.Status == "Decline" {
+		booking.Code = RandStringBytes(12)
+		updateObject = bson.D{{"$set", bson.D{
+			{"status", booking.Status},
+			{"code", booking.Code},
+		}}}
+	}
+
 	bookingCollection := client.Database(mongoDatabase).Collection("bookings")
 	bookingIdObj, err := primitive.ObjectIDFromHex(bookingId)
 	if err != nil {
@@ -281,12 +356,6 @@ func confirmBooking(booking models.Reservation, c *gin.Context, bookingId string
 
 	filter := bson.M{"_id": bookingIdObj}
 
-	updateObject := bson.D{{"$set", bson.D{
-		{"status", "Accepted"},
-		{"tableId", booking.TableId},
-		{"messageToClient", booking.MessageToClient},
-		{"code", booking.Code},
-	}}}
 	_, err = bookingCollection.UpdateOne(context.Background(), filter, updateObject)
 	if err != nil {
 		return err
@@ -302,7 +371,15 @@ func confirmBooking(booking models.Reservation, c *gin.Context, bookingId string
 		return err
 	}
 
-	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name, booking.Code)
+	if booking.Status == "Wait Client" {
+		sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
+	} else if booking.Status == "Finish" {
+		sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
+	} else if booking.Status == "Active" {
+		sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code)
+	} else if booking.Status == "Decline" {
+
+	}
 	return nil
 }
 
@@ -324,29 +401,37 @@ func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
 	return booking, nil
 }
 
-func availableTables(restaurantId string, startReservation string, endReservation string) error {
-	starT, err := time.Parse("2006-01-02T15:04", startReservation)
+func availableTables(restaurantId string, startReservation string, endReservation string, c *gin.Context) ([]models.Area, error) {
+	var listAreas []models.Area
+	starT, err := time.Parse("2006-01-02T15:04:05.000Z07:00", startReservation)
 	if err != nil {
-		return err
+		return listAreas, err
 	}
-	endT, err := time.Parse("2006-01-02T15:04", endReservation)
+	endT, err := time.Parse("2006-01-02T15:04:05.000Z07:00", endReservation)
 	if err != nil {
-		return err
-	}
-
-	tableId, err := primitive.ObjectIDFromHex("60bfb0e1cc5c5c17a782aa1c")
-	if err != nil {
-		return err
+		return listAreas, err
 	}
 
-	check, err := checkTableAvailableInInterval(tableId, starT, endT)
+	listAreas, err = getAreasByRestaurantId(c, restaurantId)
 	if err != nil {
-		return err
+		return listAreas, err
 	}
 
-	fmt.Println(check)
+	for index, area := range listAreas {
+		listAreas[index].Tables, err = getTablesByAreaIdAndRestaurantId(c, restaurantId, area.Id.Hex())
+		if err != nil {
+			return listAreas, err
+		}
 
-	return nil
+		for indexTable, table := range listAreas[index].Tables {
+			listAreas[index].Tables[indexTable].AvailableNow, err = checkTableAvailableInInterval(table.Id, starT, endT)
+			if err != nil {
+				return listAreas, err
+			}
+		}
+	}
+
+	return listAreas, nil
 }
 
 func checkTableAvailableInInterval(tableId primitive.ObjectID, start time.Time, end time.Time) (bool, error) {
@@ -357,21 +442,19 @@ func checkTableAvailableInInterval(tableId primitive.ObjectID, start time.Time, 
 	}
 
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
-	//filterObject := bson.M{
-	//	"$or": bson.A{bson.M{"associationId": associationObjectId}, bson.M{"associationId": primitive.NilObjectID}},
-	//}
+
 	filter := bson.M{
 		"$or": bson.A{
 			bson.M{"startReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(start), "$lt": primitive.NewDateTimeFromTime(end)},
-				"endReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(end), "$lt": primitive.NewDateTimeFromTime(start)},
+				"endReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(end), "$gt": primitive.NewDateTimeFromTime(start)},
 			},
 			bson.M{"startReservationDate": bson.M{"$lte": primitive.NewDateTimeFromTime(start), "$lt": primitive.NewDateTimeFromTime(end)},
-				"endReservationDate": bson.M{"$gt": primitive.NewDateTimeFromTime(end), "$gte": primitive.NewDateTimeFromTime(start)},
+				"endReservationDate": bson.M{"$lte": primitive.NewDateTimeFromTime(end), "$gt": primitive.NewDateTimeFromTime(start)},
 			},
-			bson.M{"startReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(start), "$lte": primitive.NewDateTimeFromTime(end)},
-				"endReservationDate": bson.M{"$lt": primitive.NewDateTimeFromTime(end), "$lte": primitive.NewDateTimeFromTime(start)},
+			bson.M{"startReservationDate": bson.M{"$gte": primitive.NewDateTimeFromTime(start), "$lt": primitive.NewDateTimeFromTime(end)},
+				"endReservationDate": bson.M{"$lte": primitive.NewDateTimeFromTime(end), "$gt": primitive.NewDateTimeFromTime(start)},
 			},
-		}, "status": "Accepted", "tableId": tableId}
+		}, "$and": bson.A{bson.M{"$or": bson.A{bson.M{"status": "Active"}, bson.M{"status": "Wait Client"}}}}, "tableId": tableId}
 
 	countReservation, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if err != nil {
@@ -379,8 +462,8 @@ func checkTableAvailableInInterval(tableId primitive.ObjectID, start time.Time, 
 	}
 
 	if countReservation > 0 {
-		return true, nil
+		return false, nil
 	}
 
-	return false, nil
+	return true, nil
 }

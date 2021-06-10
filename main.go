@@ -40,18 +40,18 @@ func main() {
 	{
 		freeRoute.POST("/restaurant/:restaurantId/booking", handlerCreateBooking)
 		freeRoute.POST("/restaurant/:restaurantId/booking/:bookingId/confirm", handlerCreateBooking)
-		freeRoute.POST("/restaurant/:restaurantId/email", handlerSendEmail)
+		freeRoute.POST("/id/:bookingId/status", handleUpdateStatusReservation)
+		freeRoute.GET("/id/:id/code/:code", handlerGetBookingByIdUser)
 		freeRoute.GET("/restaurant/:restaurantId/booking-hours/date/:date/persons/:persons", handlerGetBookingAvailable)
-		//freeRoute.POST("/restaurant/:restaurantId/booking/:bookingId/declineFree", handleAcceptReservation)
-
+		freeRoute.GET("/restaurant/:restaurantId/dataInterval/date/:date", handlerGetDataIntervals)
 	}
 
 	protectedUsers := router.Group("/bookings")
 	protectedUsers.Use(validatorAuth.AuthMiddleware(apiUrl + "/auth/isAuthenticated"))
 	{
-		protectedUsers.POST("/id/:bookingId/confirm", handleAcceptReservation)
 		protectedUsers.GET("/restaurant/:restaurantId/date/:date/:filter", handlerGetBookingByRestaurantAndDate)
-		protectedUsers.GET("/restaurant/:restaurantId/availableTables//:startRes/:endRes", handleGetAvailableTables)
+		protectedUsers.GET("/restaurant/:restaurantId/availableTables/:startRes/:endRes", handleGetAvailableTables)
+		protectedUsers.GET("/id/:id", handlerGetBookingByIdManager)
 	}
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Port already in use!")
