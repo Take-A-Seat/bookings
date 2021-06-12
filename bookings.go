@@ -155,7 +155,6 @@ func getAllIntervalDayBasedDay(c *gin.Context, restaurantId string, date string)
 
 func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterReq string) ([]models.Reservation, error) {
 	var listBookings []models.Reservation
-
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
 	if err != nil {
@@ -214,15 +213,6 @@ func getAllBookingsByRestaurantAndDate(restaurantId string, date string, filterR
 
 }
 
-func findDateInListReservation(date time.Time, list []models.Reservation) bool {
-	//for _, book := range list {
-	//	if date.Equal(book.ReservationDate) == true {
-	//		return true
-	//	}
-	//}
-	return false
-}
-
 func createBooking(booking models.Reservation, restaurant models.RestaurantWithDetails) error {
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
@@ -243,6 +233,8 @@ func createBooking(booking models.Reservation, restaurant models.RestaurantWithD
 		"lastName":             booking.LastName,
 		"email":                booking.Email,
 		"details":              booking.Details,
+		"products":             booking.Products,
+		"totalToPay":           0,
 		"status":               "Pending",
 	})
 	if err != nil {
@@ -401,6 +393,33 @@ func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
 	return booking, nil
 }
 
+func getBookingByCodeAndEmail(email string, code string) (models.Reservation, error) {
+	var booking models.Reservation
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return booking, err
+	}
+
+	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
+	filter := bson.M{"email": email, "code": code}
+	count, err := bookingsCollection.CountDocuments(context.Background(), filter)
+	if err != nil {
+		return booking, err
+
+	}
+	if count == 0 {
+		return booking, errors.New("Invalid credentials")
+	} else {
+		err = bookingsCollection.FindOne(context.Background(), filter).Decode(&booking)
+		if err != nil {
+			return booking, err
+		}
+	}
+
+	return booking, nil
+}
+
 func availableTables(restaurantId string, startReservation string, endReservation string, c *gin.Context) ([]models.Area, error) {
 	var listAreas []models.Area
 	starT, err := time.Parse("2006-01-02T15:04:05Z", startReservation)
@@ -466,4 +485,33 @@ func checkTableAvailableInInterval(tableId primitive.ObjectID, start time.Time, 
 	}
 
 	return true, nil
+}
+
+func updateProductsByBookingId(booking models.Reservation, bookingId string) error {
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return err
+	}
+
+	var updateObject bson.D
+	updateObject = bson.D{{"$set", bson.D{
+		{"totalToPay", booking.TotalToPay},
+		{"products", booking.Products},
+	}}}
+
+	bookingCollection := client.Database(mongoDatabase).Collection("bookings")
+	bookingIdObj, err := primitive.ObjectIDFromHex(bookingId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": bookingIdObj}
+
+	_, err = bookingCollection.UpdateOne(context.Background(), filter, updateObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

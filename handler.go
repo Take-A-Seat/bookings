@@ -2,16 +2,19 @@ package main
 
 import (
 	"github.com/Take-A-Seat/storage/models"
+	"github.com/Take-A-Seat/storage/ws"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"time"
 )
+
 
 func handlerGetBookingAvailable(c *gin.Context) {
 	restaurantId := c.Param("restaurantId")
 	date := c.Param("date")
 	persons := c.Param("persons")
-	listAvailableHours,err := getFreeHours(c, restaurantId, date, persons)
+	listAvailableHours, err := getFreeHours(c, restaurantId, date, persons)
 
 	if err == nil {
 		c.JSON(http.StatusOK, listAvailableHours)
@@ -43,19 +46,16 @@ func handlerGetBookingByIdManager(c *gin.Context) {
 }
 
 func handlerGetBookingByIdUser(c *gin.Context) {
-	bookingId := c.Param("id")
 	code := c.Param("code")
-	bookingIdObj, err := primitive.ObjectIDFromHex(bookingId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	email := c.Param("email")
 
-	booking, err := getBookingById(bookingIdObj)
-
-	if err == nil && booking.Code == code {
+	booking, err := getBookingByCodeAndEmail(email, code)
+	if err == nil {
 		c.JSON(http.StatusOK, booking)
 	} else {
+		if err.Error() == "Invalid credentials" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 }
@@ -84,6 +84,7 @@ func handlerGetBookingByRestaurantAndDate(c *gin.Context) {
 	listBookings, err := getAllBookingsByRestaurantAndDate(restaurantId, date, filter)
 
 	if err == nil {
+
 		c.JSON(http.StatusOK, listBookings)
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -104,7 +105,19 @@ func handleUpdateStatusReservation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	} else {
-		c.JSON(http.StatusCreated, gin.H{"error": "Accept reservation success"})
+		ws.WebsocketManager.SendGroup(booking.RestaurantId.Hex(), ws.RespClient{
+			Type: "get_reservations_list",
+			Id:   booking.RestaurantId.Hex(),
+			Time: time.Now(),
+		})
+
+		ws.WebsocketManager.SendGroup(booking.RestaurantId.Hex(), ws.RespClient{
+			Type: "get_available_tables",
+			Id:   booking.RestaurantId.Hex(),
+			Time: time.Now(),
+		})
+
+		c.JSON(http.StatusCreated, gin.H{"error": "Update status success"})
 	}
 }
 func handleGetAvailableTables(c *gin.Context) {
@@ -129,17 +142,52 @@ func handlerCreateBooking(c *gin.Context) {
 		return
 	}
 
-	restaurant,err := getRestaurantById(c,booking.RestaurantId.Hex())
+	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err})
 		return
 	}
 
-	errInsert := createBooking(booking,restaurant)
+	errInsert := createBooking(booking, restaurant)
 	if errInsert != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": errInsert})
 		return
 	}
 
+	ws.WebsocketManager.SendGroup(booking.RestaurantId.Hex(), ws.RespClient{
+		Type: "get_reservations_list",
+		Id:   booking.RestaurantId.Hex(),
+		Time: time.Now(),
+	})
+
 	c.JSON(http.StatusOK, gin.H{"message": "Document types were added successfully!"})
+}
+
+func handlerUpdateProductsFromBooking(c *gin.Context) {
+	var booking models.Reservation
+
+	err := c.ShouldBindJSON(&booking)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	bookingId := c.Param("bookingId")
+	err = updateProductsByBookingId(booking, bookingId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else {
+		ws.WebsocketManager.SendGroup(booking.Id.Hex(), ws.RespClient{
+			Type: "update_booking",
+			Id:   booking.Id.Hex(),
+			Time: time.Now(),
+		})
+
+		ws.WebsocketManager.SendGroup(booking.RestaurantId.Hex(), ws.RespClient{
+			Type: "get_reservations_list",
+			Id:   booking.RestaurantId.Hex(),
+			Time: time.Now(),
+		})
+		c.JSON(http.StatusCreated, gin.H{"error": "Update products from booking success"})
+	}
 }
