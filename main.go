@@ -5,10 +5,8 @@ import (
 	"github.com/Take-A-Seat/auth/validatorAuth"
 	"github.com/Take-A-Seat/storage/ws"
 	"github.com/gin-contrib/cors"
-
 	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 	"os"
 	"time"
 )
@@ -22,19 +20,6 @@ var hostname = "https://api.takeaseat.site"
 var directoryFiles = "/home/takeaseat/manager/web/files/"
 
 var addr = flag.String("addr", ":8080", "http service address")
-
-func serveHome(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL)
-	if r.URL.Path != "/" {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	http.ServeFile(w, r, "home.html")
-}
 
 func main() {
 	port := os.Getenv("TAKEASEAT_RESERVATION_PORT")
@@ -70,10 +55,10 @@ func main() {
 		freeRoute.POST("/restaurant/:restaurantId/booking/:bookingId/confirm", handlerCreateBooking)
 		freeRoute.PUT("/id/:bookingId/status", handleUpdateStatusReservation)
 		freeRoute.PUT("/id/:bookingId/products", handlerUpdateProductsFromBooking)
-		freeRoute.GET("/id/:id/email/:email/code/:code", handlerGetBookingByIdUser)
+		freeRoute.PUT("/id/:bookingId/assistance", handlerUpdateAssistanceFromBooking)
+		freeRoute.GET("/restaurant/:restaurantId/email/:email/code/:code", handlerGetBookingByIdUser)
 		freeRoute.GET("/restaurant/:restaurantId/booking-hours/date/:date/persons/:persons", handlerGetBookingAvailable)
 		freeRoute.GET("/restaurant/:restaurantId/dataInterval/date/:date", handlerGetDataIntervals)
-
 	}
 
 	protectedUsers := router.Group("/bookings")
@@ -82,6 +67,7 @@ func main() {
 		protectedUsers.GET("/restaurant/:restaurantId/date/:date/:filter", handlerGetBookingByRestaurantAndDate)
 		protectedUsers.GET("/restaurant/:restaurantId/availableTables/:startRes/:endRes", handleGetAvailableTables)
 		protectedUsers.GET("/id/:id", handlerGetBookingByIdManager)
+		protectedUsers.GET("/restaurant/:restaurantId/statistics", handlerGetStatisticsByRestaurantId)
 	}
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Port already in use!")

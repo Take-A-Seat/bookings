@@ -219,6 +219,7 @@ func createBooking(booking models.Reservation, restaurant models.RestaurantWithD
 	if err != nil {
 		return err
 	}
+	var emptyList []primitive.ObjectID
 
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
 	booking.Id = primitive.NewObjectID()
@@ -230,12 +231,14 @@ func createBooking(booking models.Reservation, restaurant models.RestaurantWithD
 		"restaurantId":         booking.RestaurantId,
 		"phone":                booking.Phone,
 		"firstName":            booking.FirstName,
+		"needAssistance":       false,
 		"lastName":             booking.LastName,
 		"email":                booking.Email,
 		"details":              booking.Details,
 		"products":             booking.Products,
 		"totalToPay":           0,
 		"status":               "Pending",
+		"tableId":              emptyList,
 	})
 	if err != nil {
 		return err
@@ -323,7 +326,7 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 			{"code", booking.Code},
 		}}}
 	} else if booking.Status == "Active" {
-		booking.Code = RandStringBytes(6)
+		booking.Code = RandStringBytes(15)
 		updateObject = bson.D{{"$set", bson.D{
 			{"status", booking.Status},
 			{"code", booking.Code},
@@ -333,7 +336,6 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 			{"status", booking.Status},
 		}}}
 	} else if booking.Status == "Declined" {
-		booking.Code = RandStringBytes(12)
 		updateObject = bson.D{{"$set", bson.D{
 			{"status", booking.Status},
 			{"code", booking.Code},
@@ -353,25 +355,24 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 		return err
 	}
 
-	//bookingDb, err := getBookingById(bookingIdObj)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////if booking.Status == "Wait Client" {
-	//	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
-	//} else if booking.Status == "Finished" {
-	//	sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
-	//} else if booking.Status == "Active" {
-	//	sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code)
-	//} else if booking.Status == "Declined" {
-	//	sendDeclineReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.MessageToClient)
-	//}
+	bookingDb, err := getBookingById(bookingIdObj)
+	if err != nil {
+		return err
+	}
+
+	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
+	if err != nil {
+		return err
+	}
+	if booking.Status == "Active" {
+		sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code, bookingDb.RestaurantId.Hex())
+	} else if booking.Status == "Wait Client" {
+		sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
+	} else if booking.Status == "Finished" {
+		sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
+	}  else if booking.Status == "Declined" {
+		sendDeclineReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.MessageToClient)
+	}
 	return nil
 }
 
@@ -393,7 +394,7 @@ func getBookingById(bookingId primitive.ObjectID) (models.Reservation, error) {
 	return booking, nil
 }
 
-func getBookingByCodeAndEmail(email string, code string) (models.Reservation, error) {
+func getBookingByCodeAndEmail(email string, code string, restaurantId string) (models.Reservation, error) {
 	var booking models.Reservation
 	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
 	defer storage.DisconnectFromDatabase(client)
@@ -401,8 +402,12 @@ func getBookingByCodeAndEmail(email string, code string) (models.Reservation, er
 		return booking, err
 	}
 
+	restaurantIdObj, err := primitive.ObjectIDFromHex(restaurantId)
+	if err != nil {
+		return booking, err
+	}
 	bookingsCollection := client.Database(mongoDatabase).Collection("bookings")
-	filter := bson.M{"email": email, "code": code}
+	filter := bson.M{"email": email, "code": code, "restaurantId": restaurantIdObj}
 	count, err := bookingsCollection.CountDocuments(context.Background(), filter)
 	if err != nil {
 		return booking, err
@@ -515,3 +520,32 @@ func updateProductsByBookingId(booking models.Reservation, bookingId string) err
 
 	return nil
 }
+
+func updateNeedAssistanceByBookingId(booking models.Reservation, bookingId string) error {
+	client, err := storage.ConnectToDatabase(mongoUser, mongoPass, mongoHost, mongoDatabase)
+	defer storage.DisconnectFromDatabase(client)
+	if err != nil {
+		return err
+	}
+
+	var updateObject bson.D
+	updateObject = bson.D{{"$set", bson.D{
+		{"needAssistance", booking.NeedAssistance},
+	}}}
+
+	bookingCollection := client.Database(mongoDatabase).Collection("bookings")
+	bookingIdObj, err := primitive.ObjectIDFromHex(bookingId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": bookingIdObj}
+
+	_, err = bookingCollection.UpdateOne(context.Background(), filter, updateObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+

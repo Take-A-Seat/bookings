@@ -37,6 +37,11 @@ github.com/Take-A-Seat/storage v0.0.0-20210611122453-773b6168f35e/go.mod h1:39O8
 github.com/Take-A-Seat/storage v0.0.0-20210612214226-4ff96f7a97f6 h1:51uLDYsdTaakuVBHnHIGRB9fQCRLaCJ3vjCzhwe8pKo=
 github.com/Take-A-Seat/storage v0.0.0-20210612214226-4ff96f7a97f6/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/Take-A-Seat/storage v0.0.0-20210612214548-97f5ef4d738a h1:+StkMQYg/lPeuVNb6Xl2hUg2jDKRcRMXxbJtdDFK3aQ=
+github.com/Take-A-Seat/storage v0.0.0-20210612214548-97f5ef4d738a/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
+github.com/Take-A-Seat/storage v0.0.0-20210614184550-27a99ccd7371 h1:331h+3k4XaAhDF3/lcJ/2c/q4/FOmiAo9E9VypilMK0=
+github.com/Take-A-Seat/storage v0.0.0-20210614184550-27a99ccd7371/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
+github.com/Take-A-Seat/storage v0.0.0-20210614210642-47fdbb72bc92 h1:+TIIruobRCkeQeol/xl4HMwuofg+3QYyAdATXBX7Svc=
+github.com/Take-A-Seat/storage v0.0.0-20210614210642-47fdbb72bc92/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/Take-A-Seat/storage/ws v0.0.0-20210612214548-97f5ef4d738a h1:LbCY2O/jgna54yQd6ySjyvCryi6Lak9mxEmzFHO6dJI=
 github.com/Take-A-Seat/storage/ws v0.0.0-20210612214548-97f5ef4d738a/go.mod h1:9QbW/4XSBMZzwUGJeSQvj8UAre7O9Y+kxlHB2HZdIE4=
 github.com/appleboy/gin-jwt/v2 v2.6.4/go.mod h1:CZpq1cRw+kqi0+yD2CwVw7VGXrrx4AqBdeZnwxVmoAs=
@@ -56,6 +61,8 @@ github.com/aws/aws-sdk-go v1.38.59 h1:rGEMmHdgXSjA2gkdo8Hdwai9mND5X0i+hZetYfABo7
 github.com/aws/aws-sdk-go v1.38.59/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-sdk-go v1.38.60 h1:MgyEsX0IMwivwth1VwEnesBpH0vxbjp5a0w1lurMOXY=
 github.com/aws/aws-sdk-go v1.38.60/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
+github.com/aws/aws-sdk-go v1.38.61 h1:wizuqQZe0K4iYJ+Slrs0aSQ4P94FAwqBUHwk46Iz5UA=
+github.com/aws/aws-sdk-go v1.38.61/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -155,6 +162,8 @@ github.com/klauspost/compress v1.12.1 h1:/+xsCsk06wE38cyiqOR/o7U2fSftcH72xD+BQXm
 github.com/klauspost/compress v1.12.1/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
 github.com/klauspost/compress v1.13.0 h1:2T7tUoQrQT+fQWdaY5rjWztFGAFwbGD04iPJg90ZiOs=
 github.com/klauspost/compress v1.13.0/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
+github.com/klauspost/compress v1.13.1 h1:wXr2uRxZTJXHLly6qhJabee5JqIhTRoLBhDOA74hDEQ=
+github.com/klauspost/compress v1.13.1/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
@@ -186,6 +195,7 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9AWI=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
+github.com/myesui/uuid v1.0.0 h1:xCBmH4l5KuvLYc5L7AS7SZg9/jKdIFubM7OVoLqaQUI=
 github.com/myesui/uuid v1.0.0/go.mod h1:2CDfNgU0LR8mIdO8vdWd8i9gWWxLlcoIGGpSNgafq84=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -234,6 +244,8 @@ github.com/tidwall/pretty v1.1.0 h1:K3hMW5epkdAVwibsQEfR/7Zj0Qgt4DxtNumTq/VloO8=
 github.com/tidwall/pretty v1.1.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tidwall/pretty v1.1.1 h1:nt6/Ot5LtZnJCWwEFlelOixPo0xhPFsuZlKyOL3Xfnc=
 github.com/tidwall/pretty v1.1.1/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
+github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=
+github.com/tidwall/pretty v1.2.0/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
 github.com/twinj/uuid v1.0.0 h1:fzz7COZnDrXGTAOHGuUGYd6sG+JMq+AoE7+Jlu0przk=
 github.com/twinj/uuid v1.0.0/go.mod h1:mMgcE1RHFUFqe5AfiwlINXisXfDGro23fWdPUfOMjRY=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
@@ -281,6 +293,8 @@ golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6 h1:0PC75Fz/kyMGhL0e1QnypqK2k
 golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6/go.mod h1:OJAsFXCWl8Ukc7SiCT/9KSuxbyM7479/AVlXFRxuMCk=
 golang.org/x/net v0.0.0-20210525063256-abc453219eb5 h1:wjuX4b5yYQnEQHzd+CBcrcC6OVR2J1CN6mUy0oSxIPo=
 golang.org/x/net v0.0.0-20210525063256-abc453219eb5/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20210610132358-84b48f89b13b h1:k+E048sYJHyVnsr1GDrRZWQ32D2C7lWs9JRc0bel53A=
+golang.org/x/net v0.0.0-20210610132358-84b48f89b13b/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190412183630-56d357773e84/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
@@ -334,6 +348,7 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EV
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/go-playground/assert.v1 v1.2.1/go.mod h1:9RXL0bg/zibRAgZUYszZSwO/z8Y/a8bDuhia5mkpMnE=
 gopkg.in/go-playground/validator.v9 v9.29.1/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
+gopkg.in/stretchr/testify.v1 v1.2.2 h1:yhQC6Uy5CqibAIlk1wlusa/MJ3iAN49/BsR/dCCKz3M=
 gopkg.in/stretchr/testify.v1 v1.2.2/go.mod h1:QI5V/q6UbPmuhtm10CaFZxED9NreB8PnFYN9JcR6TxU=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=

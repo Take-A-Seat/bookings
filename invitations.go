@@ -16,7 +16,7 @@ func sendConfirmationCreateReservation(userEmail string, firstName string, resta
 }
 
 
-func sendArrivedClient(userEmail string, firstName string, restaurantName string,code string) {
+func sendArrivedClient(userEmail string, firstName string, restaurantName string, code string, restaurantId string) {
 	var toInfo ToInfo
 
 	toInfo.Email = userEmail
@@ -26,7 +26,9 @@ func sendArrivedClient(userEmail string, firstName string, restaurantName string
 	var htmlContent string
 	subject = restaurantName + " The reservation is pending"
 	textContent = "Take a seat"
-	htmlContent = "<p> <strong>" + firstName + "</strong><p> <br><p> Your code to access menu is: <strong>"+code+"</strong></p>"
+
+	htmlContent = "<p>Hey " + firstName + " <p> <br>" +
+		"<a style=\"color: white;text-decoration: none;padding:20px 30px;background-color#B5222E;text-align:center;font-size:14px;\" href=\"https://www.takeaseat.site/restaurant/" + restaurantId + "/email/" + userEmail + "/code/" + code + "\" target=\"_blank\">See details about reservation</a>"
 
 	SendEmail(subject, toInfo, textContent, htmlContent)
 }

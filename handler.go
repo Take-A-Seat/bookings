@@ -45,18 +45,39 @@ func handlerGetBookingByIdManager(c *gin.Context) {
 	}
 }
 
+func handlerGetStatisticsByRestaurantId(c *gin.Context) {
+	restaurantId := c.Param("restaurantId")
+	restaurantIdObj, err := primitive.ObjectIDFromHex(restaurantId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	statistics, err := getStatistics(restaurantIdObj)
+
+	if err == nil {
+		c.JSON(http.StatusOK, statistics)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+
 func handlerGetBookingByIdUser(c *gin.Context) {
 	code := c.Param("code")
 	email := c.Param("email")
+	restaurantId := c.Param("restaurantId")
 
-	booking, err := getBookingByCodeAndEmail(email, code)
+	booking, err := getBookingByCodeAndEmail(email, code, restaurantId)
 	if err == nil {
 		c.JSON(http.StatusOK, booking)
+		return
 	} else {
 		if err.Error() == "Invalid credentials" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 }
 
@@ -173,6 +194,35 @@ func handlerUpdateProductsFromBooking(c *gin.Context) {
 	}
 	bookingId := c.Param("bookingId")
 	err = updateProductsByBookingId(booking, bookingId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else {
+		ws.WebsocketManager.SendGroup(booking.Id.Hex(), ws.RespClient{
+			Type: "update_booking",
+			Id:   booking.Id.Hex(),
+			Time: time.Now(),
+		})
+
+		ws.WebsocketManager.SendGroup(booking.RestaurantId.Hex(), ws.RespClient{
+			Type: "get_reservations_list",
+			Id:   booking.RestaurantId.Hex(),
+			Time: time.Now(),
+		})
+		c.JSON(http.StatusCreated, gin.H{"error": "Update products from booking success"})
+	}
+}
+
+func handlerUpdateAssistanceFromBooking(c *gin.Context) {
+	var booking models.Reservation
+
+	err := c.ShouldBindJSON(&booking)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	bookingId := c.Param("bookingId")
+	err = updateNeedAssistanceByBookingId(booking, bookingId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
