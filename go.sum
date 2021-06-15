@@ -42,6 +42,8 @@ github.com/Take-A-Seat/storage v0.0.0-20210614184550-27a99ccd7371 h1:331h+3k4XaA
 github.com/Take-A-Seat/storage v0.0.0-20210614184550-27a99ccd7371/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/Take-A-Seat/storage v0.0.0-20210614210642-47fdbb72bc92 h1:+TIIruobRCkeQeol/xl4HMwuofg+3QYyAdATXBX7Svc=
 github.com/Take-A-Seat/storage v0.0.0-20210614210642-47fdbb72bc92/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
+github.com/Take-A-Seat/storage v0.0.0-20210614212452-54d961a55350 h1:mL5KUUdS/3sZRqotJ6m4psJwPysg8+zo6f5onK3rwOA=
+github.com/Take-A-Seat/storage v0.0.0-20210614212452-54d961a55350/go.mod h1:39O8oUD4mCEDUyXJiD4KcwHMnMK1BbsAL47xoY7ECc0=
 github.com/Take-A-Seat/storage/ws v0.0.0-20210612214548-97f5ef4d738a h1:LbCY2O/jgna54yQd6ySjyvCryi6Lak9mxEmzFHO6dJI=
 github.com/Take-A-Seat/storage/ws v0.0.0-20210612214548-97f5ef4d738a/go.mod h1:9QbW/4XSBMZzwUGJeSQvj8UAre7O9Y+kxlHB2HZdIE4=
 github.com/appleboy/gin-jwt/v2 v2.6.4/go.mod h1:CZpq1cRw+kqi0+yD2CwVw7VGXrrx4AqBdeZnwxVmoAs=

@@ -2,14 +2,33 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/Take-A-Seat/storage"
 	"github.com/Take-A-Seat/storage/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"math"
+	"sort"
 )
+
+func rankMapStringInt(values map[string]int) []string {
+	type kv struct {
+		Key   string
+		Value int
+	}
+	var ss []kv
+	for k, v := range values {
+		ss = append(ss, kv{k, v})
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].Value < ss[j].Value
+	})
+	ranked := make([]string, len(values))
+	for i, kv := range ss {
+		ranked[i] = kv.Key
+	}
+	return ranked
+}
 
 func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservations, error) {
 	var statistics models.StatisticReservations
@@ -20,17 +39,20 @@ func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservation
 
 	persons := make(map[string][]int)
 	totalPay := make(map[string][]float64)
+	totalMoneyReceived := make(map[string]float64)
 	numberReservations := make(map[string]int)
 	numberPeopleReturned := make(map[string]int)
 	declined := make(map[string]int)
 	finish := make(map[string]int)
 
-	listData := make(map[string]string)
+	listData := make(map[string]int)
+	index := 0
 	var dateString string
 	for indexRes, reservation := range listReservations {
 		dateString = reservation.StartReservationDate.Format("2006-01-02")
 		if _, ok := listData[dateString]; ok {
 			persons[dateString] = append(persons[dateString], reservation.Persons)
+			totalMoneyReceived[dateString] += reservation.TotalToPay
 			if reservation.Status == "Active" || reservation.Status == "Finished" {
 				totalPay[dateString] = append(totalPay[dateString], reservation.TotalToPay)
 			}
@@ -44,13 +66,15 @@ func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservation
 				finish[dateString] += 1
 			}
 		} else {
-			listData[dateString] = dateString
+			listData[dateString] = index
+			index += 1
 			persons[dateString] = append(persons[dateString], reservation.Persons)
 			if reservation.Status == "Active" || reservation.Status == "Finished" {
 				totalPay[dateString] = append(totalPay[dateString], reservation.TotalToPay)
 			}
 			numberReservations[dateString] = 1
 			numberPeopleReturned[dateString] = 0
+			totalMoneyReceived[dateString] = reservation.TotalToPay
 			if reservation.Status == "Declined" {
 				declined[dateString] = 1
 			} else if reservation.Status == "Finished" {
@@ -58,13 +82,26 @@ func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservation
 			}
 		}
 	}
-	for key, _ := range listData {
+
+	// make an array of type string to store our keys
+	var keys []string
+
+	// iterate over the map and append all keys to our
+	// string array of keys
+	for key := range listData {
+		keys = append(keys, key)
+	}
+
+	// use the sort method to sort our keys array
+	sort.Strings(keys)
+	for _, key := range keys {
 		var chartPersons models.ChartData
 		var chartTotalPay models.ChartData
 		var chartNumberReservations models.CharWithValue
 		var chartNumberPeopleReturned models.CharWithValue
 		var chartDeclined models.CharWithValue
 		var chartFinished models.CharWithValue
+		var chartTotalMoneyReviced models.CharWithValue
 
 		chartPersons.Name = key
 		chartTotalPay.Name = key
@@ -72,6 +109,7 @@ func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservation
 		chartNumberPeopleReturned.Name = key
 		chartDeclined.Name = key
 		chartFinished.Name = key
+		chartTotalMoneyReviced.Name = key
 		var sumInt int
 		for index, person := range persons[key] {
 			if index == 0 {
@@ -110,15 +148,16 @@ func getStatistics(restaurantId primitive.ObjectID) (models.StatisticReservation
 		chartNumberPeopleReturned.Value = float64(numberPeopleReturned[key])
 		chartFinished.Value = float64(finish[key])
 		chartNumberReservations.Value = float64(numberReservations[key])
+		chartTotalMoneyReviced.Value = totalMoneyReceived[key]
 
 		statistics.Declined = append(statistics.Declined, chartDeclined)
 		statistics.NumberPeopleReturned = append(statistics.NumberPeopleReturned, chartNumberPeopleReturned)
 		statistics.Finished = append(statistics.Finished, chartFinished)
 		statistics.TotalPay = append(statistics.TotalPay, chartTotalPay)
 		statistics.NumberReservations = append(statistics.NumberReservations, chartNumberReservations)
+		statistics.TotalMoneyReceived = append(statistics.TotalMoneyReceived, chartTotalMoneyReviced)
 	}
 
-	fmt.Println(listReservations)
 	return statistics, nil
 }
 

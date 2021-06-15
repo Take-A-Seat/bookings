@@ -33,9 +33,6 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 
-	//wsGroup := router.Group("/bookings")
-	//{
-	//}
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:           []string{"*"},
