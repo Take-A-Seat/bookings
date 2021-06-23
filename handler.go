@@ -163,7 +163,7 @@ func handlerCreateBooking(c *gin.Context) {
 		return
 	}
 
-	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
+	restaurant, err := getRestaurantById(booking.RestaurantId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err})
 		return
