@@ -90,7 +90,11 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 		} else {
 			freeDate.TimeString = stringHour + ":" + stringMinutes + "0"
 		}
-		availableData = append(availableData, freeDate)
+		afterTwoHours := currentTimeToAdd.Add(time.Hour * 2)
+		listTables, _ := availableTables(restaurantIdObject.Hex(), currentTimeToAdd.String(), afterTwoHours.String(), c)
+		if chekFreeTable(listTables) == true {
+			availableData = append(availableData, freeDate)
+		}
 		currentTimeToAdd = currentTimeToAdd.Add(time.Minute * 15)
 	}
 
@@ -98,6 +102,19 @@ func getFreeHours(c *gin.Context, restaurantId string, date string, persons stri
 
 	return availableData, err
 }
+
+func chekFreeTable(areas []models.Area) bool {
+	for _, area := range areas {
+		for _, table := range area.Tables {
+			if table.AvailableNow == true {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func getAllIntervalDayBasedDay(c *gin.Context, restaurantId string, date string) ([]models.AvailableDataReservation, error) {
 	var dataProgramList []models.AvailableDataReservation
 	var programDay models.Program
@@ -355,24 +372,24 @@ func updateStatusBooking(booking models.Reservation, c *gin.Context, bookingId s
 		return err
 	}
 
-	//bookingDb, err := getBookingById(bookingIdObj)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
-	//if err != nil {
-	//	return err
-	//}
-	//if booking.Status == "Active" {
-	//	sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code, bookingDb.RestaurantId.Hex())
-	//} else if booking.Status == "Wait Client" {
-	//	sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
-	//} else if booking.Status == "Finished" {
-	//	sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
-	//}  else if booking.Status == "Declined" {
-	//	sendDeclineReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.MessageToClient)
-	//}
+	bookingDb, err := getBookingById(bookingIdObj)
+	if err != nil {
+		return err
+	}
+
+	restaurant, err := getRestaurantById(c, booking.RestaurantId.Hex())
+	if err != nil {
+		return err
+	}
+	if booking.Status == "Active" {
+		sendArrivedClient(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.Code, bookingDb.RestaurantId.Hex())
+	} else if booking.Status == "Wait Client" {
+		sendConfirmationAcceptReservation(bookingDb.Email, bookingDb.FirstName, booking.MessageToClient, restaurant.RestaurantDetails.Name)
+	} else if booking.Status == "Finished" {
+		sendFinishReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name)
+	} else if booking.Status == "Declined" {
+		sendDeclineReservation(bookingDb.Email, bookingDb.FirstName, restaurant.RestaurantDetails.Name, booking.MessageToClient)
+	}
 	return nil
 }
 
